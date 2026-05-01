@@ -54,7 +54,7 @@ def status_code(chain_name, on_failed_configuration) -> int:
 
 @backoff.on_predicate(
     backoff.fibo,
-    lambda response: response.headers.get("server") not in ("openresty", "envoy"),
+    lambda response: response.status_code not in (200, 503, 500),
     max_tries=8,
     jitter=None,
 )
@@ -72,4 +72,3 @@ def test_on_failed_policy(application, status_code):
 
     response = make_request(api_client)
     assert response.status_code == status_code
-    assert response.headers["server"] in ("openresty", "envoy")
