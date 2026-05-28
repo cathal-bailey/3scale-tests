@@ -2,10 +2,12 @@
 
 import pytest
 
-from testsuite.ui.views.admin.audience.billing import BillingView, BillingSettingsView
+from testsuite.ui.views.admin.audience.billing import (
+    BillingSettingsView,
+    BillingView,
+)
 from testsuite.ui.views.admin.audience.developer_portal import (
-    BotProtection,
-    CMSEditPageView,
+    ActiveDocsView,
     CMSNewPageView,
     CMSNewSectionView,
     DeveloperPortalContentView,
@@ -18,10 +20,9 @@ VIEWS = [
     ("portal", DeveloperPortalContentView),
     ("portal", CMSNewPageView),
     ("portal", CMSNewSectionView),
-    ("portal", CMSEditPageView),
-    ("portal", BotProtection),
     ("finance", BillingView),
     ("finance", BillingSettingsView),
+    ("plans", ActiveDocsView),
 ]
 
 
@@ -29,6 +30,7 @@ VIEWS = [
 @pytest.mark.parametrize("user_permission", PERMISSIONS)
 @pytest.mark.parametrize("required_permission, page_view", VIEWS)
 def test_member_user_permissions_per_section(
+    account_password,
     custom_admin_login,
     navigator,
     provider_member_user,
@@ -46,7 +48,7 @@ def test_member_user_permissions_per_section(
         - partners, settings, monitoring and policy_registry to be added? More complicated
     """
     member_user = provider_member_user(allowed_sections=user_permission, allowed_services=False)
-    custom_admin_login(member_user.entity_name, "123456")
+    custom_admin_login(member_user.entity_name, account_password)
 
     page = navigator.open(page_view, wait_displayed=False)
     access_denied_view = AccessDeniedView(navigator.browser.root_browser)
