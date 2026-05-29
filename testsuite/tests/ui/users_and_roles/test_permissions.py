@@ -2,6 +2,7 @@
 
 import pytest
 
+from testsuite.ui.views.admin.audience.account import AccountsView
 from testsuite.ui.views.admin.audience.billing import (
     BillingSettingsView,
     BillingView,
@@ -12,7 +13,9 @@ from testsuite.ui.views.admin.audience.developer_portal import (
     CMSNewSectionView,
     DeveloperPortalContentView,
 )
+from testsuite.ui.views.admin.backend.analytics import BackendTrafficView
 from testsuite.ui.views.admin.foundation import AccessDeniedView
+from testsuite.ui.views.admin.settings.api_docs import APIDocsView
 
 PERMISSIONS = ["portal", "finance", "settings", "partners", "monitoring", "plans", "policy_registry"]
 
@@ -23,6 +26,10 @@ VIEWS = [
     ("finance", BillingView),
     ("finance", BillingSettingsView),
     ("plans", ActiveDocsView),
+    ("settings", APIDocsView),
+    ("monitoring", BackendTrafficView),
+    ("policy_registry", APIDocsView),
+    ("partners", AccountsView),
 ]
 
 
@@ -34,9 +41,11 @@ def test_member_user_permissions_per_section(
     custom_admin_login,
     navigator,
     provider_member_user,
+    backend_default,
     user_permission,
     required_permission,
     page_view,
+    is_page_accessible,
 ):
     """
     Tests user permissions permission per permission section
@@ -45,16 +54,18 @@ def test_member_user_permissions_per_section(
         - Attempts to access a specific UI page
         - If users permission matches page's required permission -> allowed
         - Else, access denied
-        - partners, settings, monitoring and policy_registry to be added? More complicated
     """
     member_user = provider_member_user(allowed_sections=user_permission, allowed_services=False)
     custom_admin_login(member_user.entity_name, account_password)
 
-    page = navigator.open(page_view, wait_displayed=False)
+    if page_view == BackendTrafficView:
+        page = navigator.open(page_view, backend=backend_default, wait_displayed=False)
+    else:
+        page = navigator.open(page_view, wait_displayed=False)
     access_denied_view = AccessDeniedView(navigator.browser.root_browser)
 
     if user_permission == required_permission:
-        assert page.is_displayed, f"A user with {user_permission} should be able to access {page_view}"
+        assert is_page_accessible(page), f"A user with {user_permission} should be able to access {page_view}"
     else:
         assert (
             access_denied_view.is_displayed
