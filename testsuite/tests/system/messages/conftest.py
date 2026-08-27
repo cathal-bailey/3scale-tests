@@ -19,7 +19,7 @@ def enable_notifications(openshift):
         "Account.providers.each { |p| "
         "p.admins.each { |a| "
         "a.notification_preferences.enabled_notifications |= "
-        '["account_created", "application_created", "service_contract_created", "account_deleted"]; '
+        '["account_created", "application_created", "service_contract_created", "account_deleted", "service_deleted"]; '
         "a.notification_preferences.save! }; "
         "p.settings.service_plans_ui_visible = true; "
         "p.settings.save! }; "
