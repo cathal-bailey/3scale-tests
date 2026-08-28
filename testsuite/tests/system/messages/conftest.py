@@ -1,54 +1,30 @@
 """
 Conftest for messages tests.
 
-These tests require email notifcations to be enabled.
+These tests require email notifications to be enabled.
 """
 
 import pytest
 
+NOTIFICATIONS = [
+    "account_created",
+    "application_created",
+    "service_contract_created",
+    "account_deleted",
+    "service_deleted",
+]
+
 
 @pytest.fixture(scope="session", autouse=True)
-def enable_notifications(openshift):
+def enable_notifications(threescale):
     """
-    Enable notification preferences for all provider admin users.
+    Enable notification preferences for the current provider's admin user.
 
     After porta PR #4039, notifications use a per-user NotificationPreferences model
     instead of account-level settings. In fresh deployments, notifications default to disabled.
     """
-    rails_command = (
-        "Account.providers.each { |p| "
-        "p.admins.each { |a| "
-        "a.notification_preferences.enabled_notifications |= "
-        '["account_created", "application_created", "service_contract_created", "account_deleted", "service_deleted"]; '
-        "a.notification_preferences.save! }; "
-        "p.settings.service_plans_ui_visible = true; "
-        "p.settings.save! }; "
-        'puts "Notification preferences enabled for #{Account.providers.count} provider(s)"'
-    )
-
-    ocp = openshift()
-
-    print("\n=== ENABLING NOTIFICATIONS FIXTURE ===")
-
-    try:
-        result = ocp.do_action(
-            "exec",
-            [
-                "deployment/system-app",
-                "-c",
-                "system-master",
-                "--",
-                "bash",
-                "-c",
-                f"cd /opt/system && bundle exec rails runner '{rails_command}'",
-            ],
-        )
-        print(f"Fixture result: {result.out()}")
-        print(f"Fixture errors: {result.err()}")
-    except Exception as e:
-        print(f"ERROR in enable_notifications fixture: {e}")
-        raise
-
-    print("=== NOTIFICATIONS ENABLED ===\n")
+    params = {f"notification_preferences[{n}]": "true" for n in NOTIFICATIONS}
+    threescale.rest.patch(path="/admin/api/personal/notification_preferences", data=params)
+    threescale.rest.put(path="/admin/api/settings", data={"service_plans_ui_visible": "true"})
 
     yield
